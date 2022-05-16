@@ -1,3 +1,4 @@
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import render
 from django.views import generic
 from .models import Book, BookInstance, Author, Genre
@@ -13,7 +14,7 @@ def index(request):
     num_rings_title_book = Book.objects.filter(
         title__icontains="rings").count()
     num_visits = request.session.get('num_visits', 0)
-    request.sessions['num_visits'] = num_visits + 1
+    request.session['num_visits'] = num_visits + 1
 
     return render(
         request,
@@ -68,3 +69,13 @@ class AuthorListView(generic.ListView):
 
 class AuthorDetailView(generic.DetailView):
     model = Author
+
+
+class LoanedBooksByUserListView(LoginRequiredMixin, generic.ListView):
+    model = BookInstance
+    template_name = 'catalog/bookinstance_list_borrowed_user.html'
+    paginate_by = 10
+
+    def get_queryset(self):
+        return BookInstance.objects.filter(borrower=self.request.user).filter(status__exact='o').order_by('due_back')
+    
